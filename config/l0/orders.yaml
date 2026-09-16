@@ -1,0 +1,51 @@
+table_name: orders
+schema_name: retail
+
+l0_layer: l0
+l1_layer: l1
+audit_layer: audit
+
+l0_format: csv
+l1_format: parquet
+audit_format: parquet
+
+l0_stage: stage_l0
+l1_stage: stage_l1
+audit_stage: stage_audit
+
+columns:
+  - name: id
+    type: string
+  - name: customer_id
+    type: string
+  - name: product_id
+    type: string
+  - name: quantity
+    type: int
+  - name: price
+    type: decimal
+  - name: order_date
+    type: datetime
+
+validation:
+  - rule: not_null
+    column: [id, customer_id, product_id, quantity, price, order_date, source_file, process_date]
+  - rule: range
+    column: quantity
+    min: 0
+    max: 9999
+  - rule: range
+    column: price
+    min: 0
+    max: 9999999
+  - rule: duplicate
+    primary_key: id
+  - rule: unique
+    column: [customer_id, product_id]
+
+transformation:
+  rename:
+    - from: id
+      to: order_id
+  filter_columns:
+    - output: [order_id, customer_id, product_id, quantity, price, order_date, process_date, source_file]

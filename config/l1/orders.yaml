@@ -1,0 +1,56 @@
+schema_name: retail
+table_name: orders
+
+l1_layer: l1
+l1_format: parquet
+
+columns:
+  - name: order_id
+    type: string
+    db_type: VARCHAR
+    max_length: 20
+    primary_key: true
+
+  - name: customer_id
+    type: string
+    db_type: VARCHAR
+    max_length: 20
+    not_null: true
+
+  - name: product_id
+    type: string
+    db_type: VARCHAR
+    max_length: 20
+    not_null: true
+
+  - name: quantity
+    type: integer
+    db_type: INTEGER
+    not_null: true
+
+  - name: price
+    type: decimal
+    db_type: NUMERIC
+    precision: 15
+    scale: 2
+    not_null: true
+
+  - name: order_date
+    type: timestamp
+    db_type: TIMESTAMP
+    not_null: true
+
+  - name: process_date
+    type: timestamp
+    db_type: TIMESTAMP
+    not_null: true
+
+  - name: source_file
+    type: string
+    db_type: VARCHAR
+    max_length: 255
+    not_null: true
+
+load_database:
+  load_strategy: upsert
+  primary_key: order_id

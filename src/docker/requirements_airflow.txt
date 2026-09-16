@@ -1,0 +1,11 @@
+psycopg2-binary
+
+# providers
+apache-airflow-providers-amazon
+apache-airflow-providers-postgres
+
+pandas
+pyyaml
+pyarrow
+faker
+boto3

@@ -1,0 +1,41 @@
+table_name: products
+schema_name: retail
+
+l0_layer: l0
+l1_layer: l1
+audit_layer: audit
+
+l0_format: csv
+l1_format: parquet
+audit_format: parquet
+
+l0_stage: stage_l0
+l1_stage: stage_l1
+audit_stage: stage_audit
+
+columns:
+  - name: id
+    type: string
+  - name: name
+    type: string
+  - name: unit_price
+    type: decimal
+
+validation:
+  - rule: not_null
+    column: [id, name, unit_price, source_file, process_date]
+  - rule: range
+    column: unit_price
+    min: 0
+    max: 9999
+  - rule: duplicate
+    primary_key: id
+
+transformation:
+  rename:
+    - from: id
+      to: product_id
+    - from: name
+      to: product_name
+  filter_columns:
+    - output: [product_id, product_name, unit_price, process_date, source_file]

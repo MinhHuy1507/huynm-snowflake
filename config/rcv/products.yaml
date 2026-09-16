@@ -1,0 +1,23 @@
+
+table_name: products
+schema_name: retail
+
+rcv_layer: rcv
+l0_layer: l0
+quarantine_layer: quarantine
+
+rcv_format: csv
+l0_format: csv
+quarantine_format: csv
+
+columns:
+  - name: id
+    type: string
+  - name: name
+    type: string
+  - name: unit_price
+    type: decimal
+
+validation:
+  validate_file: true
+  validate_schema: true

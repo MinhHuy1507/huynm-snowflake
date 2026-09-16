@@ -1,0 +1,50 @@
+table_name: customers
+schema_name: retail
+
+l0_layer: l0
+l1_layer: l1
+audit_layer: audit
+
+l0_format: csv
+l1_format: parquet
+audit_format: parquet
+
+l0_stage: stage_l0
+l1_stage: stage_l1
+audit_stage: stage_audit
+
+columns:
+  - name: id
+    type: string
+  - name: name
+    type: string
+  - name: birthday
+    type: date
+    format: YYYY-MM-DD
+  - name: address
+    type: string
+  - name: kpi
+    type: decimal
+
+validation:
+  - rule: not_null
+    column: [id, name, birthday, address, kpi, source_file, process_date]
+  - rule: range
+    column: kpi
+    min: 0
+    max: 100
+  - rule: duplicate
+    primary_key: id
+
+transformation:
+  split_name:
+    - from: name
+      to: [first_name, last_name]
+  split_address:
+    - from: address
+      to: [address, address_province]
+  rename:
+    - from: id
+      to: customer_id
+  filter_columns:
+    - output: [customer_id, first_name, last_name, birthday, address, address_province, kpi, process_date, source_file]

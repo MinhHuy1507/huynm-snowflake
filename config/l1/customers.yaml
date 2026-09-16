@@ -1,0 +1,62 @@
+schema_name: retail
+table_name: customers
+
+l1_layer: l1
+l1_format: parquet
+
+columns:
+  - name: customer_id
+    type: string
+    db_type: VARCHAR
+    max_length: 20
+    primary_key: true
+
+  - name: first_name
+    type: string
+    db_type: VARCHAR
+    max_length: 100
+    not_null: true
+
+  - name: last_name
+    type: string
+    db_type: VARCHAR
+    max_length: 100
+    not_null: true
+
+  - name: birthday
+    type: date
+    db_type: DATE
+    not_null: true
+
+  - name: address
+    type: string
+    db_type: VARCHAR
+    max_length: 100
+    not_null: true
+
+  - name: address_province
+    type: string
+    db_type: VARCHAR
+    max_length: 100
+    not_null: true
+
+  - name: kpi
+    type: double
+    db_type: DOUBLE
+    not_null: true
+    range: [0, 100]
+
+  - name: process_date
+    type: timestamp
+    db_type: TIMESTAMP
+    not_null: true
+
+  - name: source_file
+    type: string
+    db_type: VARCHAR
+    max_length: 255
+    not_null: true
+
+load_database:
+  load_strategy: upsert
+  primary_key: customer_id
