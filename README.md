@@ -15,6 +15,7 @@ A batch data pipeline using Python, Apache Airflow, AWS services, Snowflake, and
 ### 3. Architecture
 - [System Architecture](docs/03_architecture/architecture.md)
 - [Data Flow](docs/03_architecture/dataflow.md)
+- [Table Configuration](docs/03_architecture/table_config.md)
 
 > Architecture:
 ![Architecture](./docs/assets/architecture_snowflake.png)
