@@ -6,7 +6,7 @@ Main components:
 |-|-|
 | `init_snowflake.sql` | setup script: creates database/schema, storage integration to S3, and file formats |
 | `init_ext_table.py` | Creates (or re-creates) all External Tables for the L0 layer based on table configs |
-| `snowflake_process_stages.py` | Processe data: loads L0 data into snowflake → validates → transforms → writes L1/Audit output to S3 |
+| `snowflake_process_stages.py` | Processes data: loads L0 data into Snowflake, validates and transforms it, and writes L1/Audit output to S3 |
 | `process_rcv_to_l0.py` | Process data from rcv/ to l0/ do basic file-level and schema validation |
 | `commons/sf_helper.py` | Helper functions for generating Snowflake SQL (refresh external tables, create processing scope objects, export files to stages) and creating Snowflake connections. |
 | `commons/validations.py` | SQL expression generators for data validation at both levels: RCV→L0 (file validation) and L0→L1 (record validation). |
@@ -113,9 +113,9 @@ day
 
 ---
 
-# 5. Snowflake Helper Functions — `sf_helper.py`
+# 4. Snowflake Helper Functions — `sf_helper.py`
 
-## 5.1. `get_conn(user, password, account, warehouse, database, schema)`
+## 4.1. `get_conn(user, password, account, warehouse, database, schema)`
 
 A thin wrapper around:
 
@@ -125,7 +125,7 @@ snowflake.connector.connect(...)
 
 Returns a Snowflake connection object.
 
-## 5.2. `refresh_external_table(schema_name, ext_name, process_date) -> str`
+## 4.2. `refresh_external_table(schema_name, ext_name, process_date) -> str`
 
 Generates:
 
@@ -138,7 +138,7 @@ Purpose: Force Snowflake to refresh metadata for a specific partition path befor
 
 ---
 
-## 5.3. `create_process_scope(schema_name, table_name, process_date, object_name, is_temporary=False) -> str`
+## 4.3. `create_process_scope(schema_name, table_name, process_date, object_name, is_temporary=False) -> str`
 
 ### Description
 
@@ -169,14 +169,14 @@ Creates a snapshot object containing data from a **single partition date**, and 
         AND day = '{partition_date:%d}'
 ```
 
-# 5.4. `write_file(stage, schema_name, table_name, process_date, object_name, format, is_valid=True) -> str`
+## 4.4. `write_file(stage, schema_name, table_name, process_date, object_name, format, is_valid=True) -> str`
 - Generates a `COPY INTO` statement to export data from Snowflake back to S3.
-- Support writing both valid and invalid records via parameter `is_valid=True/False`.
+- Supports writing both valid and invalid records through the `is_valid=True/False` parameter.
 
 ---
 
-# 6. Orchestration by Processing Date — `snowflake_process_stages.py`
-## 6.1. `load_snowflake(schema, table, process_date, run_id)`
+# 5. Orchestration by Processing Date — `snowflake_process_stages.py`
+## 5.1. `load_snowflake(schema, table, process_date, run_id)`
 ### Description
 - Loads data from the L0 External Table into a date-partition snapshot object.
 
@@ -195,7 +195,7 @@ table_process_scope = f"{table}_{run_id}"
 
 ---
 
-## 6.2. `process_l0_to_l1(bucket, schema, table, process_date, run_id)`
+## 5.2. `process_l0_to_l1(bucket, schema, table, process_date, run_id)`
 
 ### Description
 - Performs validation and transformation from L0 to L1 while separating invalid records into Audit.
@@ -244,5 +244,5 @@ TEMP TABLE transformation_{table}
 8. Close connection.
 
 
-# 7. Dag triggered by Airflow - `pipeline_snowflake_stages.py`
-- Initialize pipeline using Python Operators to generate SQL and execute Snowflake operations.
+# 6. DAG Triggered by Airflow - `pipeline_snowflake_stages.py`
+- Initializes the pipeline using PythonOperators to generate SQL and execute Snowflake operations.

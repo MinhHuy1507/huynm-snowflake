@@ -12,7 +12,7 @@
 ```sql
 CASE WHEN NULLIF(TRIM({col}::STRING), '') IS NULL THEN 'not_null({col})' END
 ```
-### Cover case
+### Các trường hợp
 - col='' (empty) -> 'not_null({col})'
 - col=' ' (only space) -> 'not_null({col})'
 - col= Null -> 'not_null({col})'
@@ -25,10 +25,10 @@ CASE WHEN NULLIF(TRIM({col}::STRING), '') IS NULL THEN 'not_null({col})' END
 ### Output
 - sql text expression: str
 
-### Cover case
+### Các trường hợp
 - Ví dụ validate id
-- id='' or ' ' or Null -> Không vi phạm và ko trả kết quả gì (null sẽ do validate_not_null xử lý nếu có define, không thì cho pass)
-- id nếu trùng -> toàn bộ records có giá trị trùng bị đánh dấu 'unique_id'
+- id='' hoặc ' ' hoặc Null -> Không vi phạm và không trả kết quả gì (null sẽ do validate_not_null xử lý nếu được định nghĩa; nếu không thì được chấp nhận).
+- Nếu id bị trùng -> toàn bộ records có giá trị trùng bị đánh dấu 'unique(id)'.
 
 ### Logic
 ```python
@@ -49,7 +49,7 @@ expr = [f"""CASE WHEN {all_columns_present}
 - max: float
 ### Output
 - sql text expression: str
-### Cover case
+### Các trường hợp
 - record='' or ' ' or Null -> pass
 - record > max or < min -> 'range(col)'
 ### Logic
@@ -63,7 +63,7 @@ CASE WHEN NULLIF(TRIM({col}::STRING), '') IS NOT NULL
 - table_config: dict
 ### Output
 - sql text expression: str
-### Cover case
+### Các trường hợp
 - record='' or ' ' or Null -> pass
 - record cùng type
 - record khác type -> Try_to_* null -> 'datatype(col)'
@@ -82,7 +82,7 @@ expr_col = (
     f"AND {cast_expr} IS NULL THEN 'datatype({col_name})' END"
 )
 ```
-- Đọc column type từ table_config.yaml, mapping ra hàm try_to trong snowflake, hàm này sẽ trả về null nếu ko đúng type
+- Đọc kiểu dữ liệu của cột từ table_config.yaml và ánh xạ sang hàm TRY_TO_* trong Snowflake. Hàm này sẽ trả về NULL nếu giá trị không đúng kiểu.
 
 
 ## **5. validate_l0_to_l1**
@@ -126,9 +126,9 @@ expr_col = (
         ) AS validation_errors
     FROM retail.vw_customers
     ```
-### Cover case
-- birthday='2026-08-08', id = 'C01' (id ko trùng) -> pass
-- birthday='2026/08/08', id = 'C02' (id ko trùng) -> ['datatype(birthday)']
+### Các trường hợp
+- birthday='2026-08-08', id = 'C01' (id không trùng) -> pass
+- birthday='2026/08/08', id = 'C02' (id không trùng) -> ['datatype(birthday)']
 - birthday='2026/08/08', id = 'C03' (id bị trùng) -> ['datatype(birthday)', 'unique(id)']
 
 # Transformation
@@ -136,13 +136,13 @@ expr_col = (
 ### Input
 - transform_rules: dict. ex: {"from": "name", "to": ["first_name", "last_name"]}
 - column_expression: dict. ex: {"id": "id", "name": "name", ... {col}: {col_expression}}
-    - Sẽ do hàm transform_l0_to_l1 truyền vào, mục đích là phục vụ cho việc tổng hợp transform. Ví dụ:
+    - Được truyền vào bởi hàm transform_l0_to_l1 để phục vụ việc tổng hợp các phép biến đổi. Ví dụ:
     ```sql
     -- column_expression = {"customer_id": "id", "first_name": "expression(first_name)", "last_name": "expression(last)name)"}
     SELECT
         id AS customer_id,
         expression(first_name) AS first_name,
-        expression(last_name) AS first_name
+        expression(last_name) AS last_name
     FROM ...
     ```
 ### Output
@@ -150,12 +150,12 @@ expr_col = (
 - ex:
 ```python
 column_expression= {
-    "first_name": "NULLIF(REGEXP_SUBSTR({TRIM(name), '[^[:space:]]+$'), '')",
+    "first_name": "NULLIF(REGEXP_SUBSTR(TRIM(name), '[^[:space:]]+$'), '')",
     "last_name": "NULLIF(TRIM(REGEXP_REPLACE(TRIM(name), '[^[:space:]]+$', '')), '')"
 }
 ```
 
-### Cover case
+### Các trường hợp
 - name = '' or ' ' or Null -> first_name = last_name = Null
 - name = 'Huy' -> first_name = 'Huy', last_name = Null
 - name = 'Ngo Minh Huy' -> first_name = 'Huy', last_name = 'Ngo Minh'
@@ -170,12 +170,12 @@ column_expression= {
 - ex:
 ```python
 column_expression= {
-    "address": "NULLIF(TRIM(REGEXP_REPLACE(name, ',\\\\s*[^,]+$', '')), '')",
-    "address_province": "NULLIF(TRIM(SPLIT_PART(name, ',', -1)), '')"
+    "address": "NULLIF(TRIM(REGEXP_REPLACE(address, ',\\\\s*[^,]+$', '')), '')",
+    "address_province": "NULLIF(TRIM(SPLIT_PART(address, ',', -1)), '')"
 }
 ```
 
-### Cover case
+### Các trường hợp
 - case 1: address=None -> address = address_province = None
 - case 2: address="123 Nguyen Ai Quoc, Ho Chi Minh" -> address = "123 Nguyen Ai Quoc, Ho Chi Minh", address_province ="Ho Chi Minh"
 - case 3: address="123 Nguyen Ai Quoc" -> address = "123 Nguyen Ai Quoc", address_province=None
@@ -196,7 +196,7 @@ column_expression= {
 }
 ```
 
-### Cover case
+### Các trường hợp
 - case: cột id -> customer_id
 
 ## **4. filter_columns**
@@ -263,8 +263,8 @@ column_expression = {
     "first_name": "NULLIF(REGEXP_SUBSTR(TRIM(name), '[^[:space:]]+$'), '')",
     "last_name": "NULLIF(TRIM(REGEXP_REPLACE(TRIM(name), '[^[:space:]]+$', '')), '')",
     "birthday": "TRY_TO_DATE(birthday, 'YYYY-MM-dd')",
-    "address": "NULLIF(TRIM(REGEXP_REPLACE(name, ',\\\\s*[^,]+$', '')), '')",
-    "address_province": "NULLIF(TRIM(SPLIT_PART(name, ',', -1)), '')",
+    "address": "NULLIF(TRIM(REGEXP_REPLACE(address, ',\\\\s*[^,]+$', '')), '')",
+    "address_province": "NULLIF(TRIM(SPLIT_PART(address, ',', -1)), '')",
     "kpi": "CAST(kpi AS DECIMAL(38, 4))"
 }
 ```
@@ -276,8 +276,8 @@ SELECT
     NULLIF(REGEXP_SUBSTR(TRIM(name), '[^[:space:]]+$'), '') as first_name,
     NULLIF(TRIM(REGEXP_REPLACE(TRIM(name), '[^[:space:]]+$', '')), '') as last_name,
     TRY_TO_DATE(birthday, 'YYYY-MM-dd') as birthday,
-    NULLIF(TRIM(REGEXP_REPLACE(name, ',\\\\s*[^,]+$', '')), '') as address,
-    NULLIF(TRIM(SPLIT_PART(name, ',', -1)), '') as address_province,
+    NULLIF(TRIM(REGEXP_REPLACE(address, ',\\\\s*[^,]+$', '')), '') as address,
+    NULLIF(TRIM(SPLIT_PART(address, ',', -1)), '') as address_province,
     CAST(kpi AS DECIMAL(38, 4)) as kpi
 FROM retail.vw_validation_valid_customers
 ```

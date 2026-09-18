@@ -434,7 +434,7 @@ Output:
 
 | Scenario | Expected Result |
 | -------- | --------------- |
-| Column type in supported datat types above | Values are converted to matching datatype |
+| Column type is in the supported data types above | Values are converted to the matching data type |
 | Value cannot be converted to target datatype | Output value becomes NULL |
 | Input contains NULL values | NULL values remain NULL |
 | Dataset contains N records | Output still contains N records |

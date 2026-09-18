@@ -52,5 +52,5 @@ columns:
     not_null: true
 
 load_database:
-  load_strategy: upsert
+  load_strategy: append_only
   primary_key: order_id

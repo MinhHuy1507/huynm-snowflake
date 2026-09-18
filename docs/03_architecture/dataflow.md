@@ -69,14 +69,14 @@ Executed on **EC2-hosted Airflow (Airflow PythonOperator)**:
 
 ## 4. Stage 2 — Snowflake Initialization & Load L0 Partition
 
-### 0. Initialization Step (One-Time Setup via `init_snowflake.sql` + `init_ext_table.py`)
+### 1. Initialization Step (One-Time Setup via `init_snowflake.sql` + `init_ext_table.py`)
 
 - `init_snowflake.sql` creates the Database, Schema, Storage Integration, and two File Formats (`csv_ff`, `parquet_ff`).
 - `init_ext_table.py`
   - Reads table configurations to obtain table schemas.
   - Generates SQL statements for external table creation.
 
-### 1. **Refresh External Table**
+### 2. **Refresh External Table**
 
 ```sql
 ALTER EXTERNAL TABLE {schema}.{table} REFRESH '{process_date}';
@@ -85,7 +85,7 @@ ALTER EXTERNAL TABLE {schema}.{table} REFRESH '{process_date}';
 - After the file is successfully validated from RCV to L0, the pre-created Snowflake external table is refreshed for the specified `process_date`.
 - Snowflake scans only the corresponding partition path on S3 and updates its file metadata.
 
-### 2. **Create a Run-Scoped Permanent Table**
+### 3. **Create a Run-Scoped Permanent Table**
 
 ```sql
 CREATE OR REPLACE TABLE {schema}.{table}_{run_id} AS
@@ -202,7 +202,7 @@ HEADER = TRUE
 Executed by GlueJobOperator with glue `huynm43-mp-glue-load-database.py`:
 
 
-1. GetObject file contains RDS password and retrieve password
+1. Retrieve the RDS password from the object returned by `GetObject`.
 2. Build database connection configuration:
 
 ```python
@@ -243,8 +243,8 @@ columns:
 
 7. Execute the selected load strategy.
 ```
-customer      → upsert
-product       → upsert
+customers     → upsert
+products      → upsert
 province      → truncate_and_insert
 orders        → append_only
 ```

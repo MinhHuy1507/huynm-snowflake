@@ -1,5 +1,5 @@
 # **Mock Project**
-Xây dựng batch data pipeline xử l ý dữ liệu bán hàng theo ngày.
+Xây dựng batch data pipeline xử lý dữ liệu bán hàng theo ngày.
 
 ## Yêu cầu
 - Chuẩn bị file customer.csv gồm:

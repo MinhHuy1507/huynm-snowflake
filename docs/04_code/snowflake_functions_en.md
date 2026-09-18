@@ -191,7 +191,7 @@ Example:
     CASE WHEN NULLIF(TRIM(birthday::STRING), '') IS NOT NULL 
         AND {TRY_TO_DATE(birthday, "YYYY-MM-dd")} IS NULL THEN 'datatype(birthday)' END
     ```
-    - Read orther rules, execute validate_unique, output:
+    - Read other rules and execute validate_unique. Output:
     ```sql
     CASE WHEN NULLIF(TRIM(id::STRING), '') IS NOT NULL
         AND COUNT(*) OVER(PARTITION BY NULLIF(TRIM(id::STRING), '')) > 1 THEN 'unique(id)' END

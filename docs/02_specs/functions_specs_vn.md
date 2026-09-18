@@ -8,12 +8,12 @@
     - File có empty không.
     - File chỉ chứa header.
 - Nếu file hợp lệ, dữ liệu được đọc thành công.
-- Nếu file không hợp lệ, trả về error message, và ghi file ra quarantine/ trong 1 vài Scenarios.
+- Nếu file không hợp lệ, trả về thông báo lỗi và ghi file ra quarantine/ trong một số trường hợp.
 ### Input
 - Một đường dẫn file ở rcv theo định dạng `rcv/schema_name/table_name/yyyy/mm/dd/table_name.csv`
 ### Output
 - Success: dữ liệu được đọc.
-- Failure: trả về error message, ghi file ra quarantine/ trong 1 số Scenarios theo định dạng `quarantine/schema_name/table_name/yyyy/mm/dd/table_name.csv`.
+- Failure: trả về thông báo lỗi và ghi file ra quarantine/ trong một số trường hợp theo định dạng `quarantine/schema_name/table_name/yyyy/mm/dd/table_name.csv`.
 
 ### Scenarios
 | Scenario                        | Expected Result                                            |
@@ -119,7 +119,7 @@
 | 3    | A         | FALSE              |
 | 3    | Huy       | TRUE               |
 
-- Giải thích: các record có cặp (id, name) trùng dũ liệu sẽ được đánh dấu FALSE, riêng NULL sẽ được bỏ qua.
+- Giải thích: các record có cặp (id, name) trùng dữ liệu sẽ được đánh dấu FALSE; riêng NULL sẽ được bỏ qua.
 
 ## 3. validate_range
 ### Purpose
@@ -294,7 +294,7 @@ Example
 - Tên cột mới
 
 ### Output
-- Cột được rename theo tên đã define
+- Cột được đổi tên theo tên đã định nghĩa
 
 ### Scenarios
 | Scenario                      | Expected Result                   |
@@ -335,7 +335,7 @@ Example
 - Các cột cần được filter
 
 ### Output
-- Các cột cần thiết được giữ lại theo như define trong table config
+- Các cột cần thiết được giữ lại theo định nghĩa trong table config
 
 ### Scenarios
 
@@ -499,7 +499,7 @@ Unsupported type: binary in column customer_id
 ### Scenarios
 | Scenario                              | Expected Result                                      |
 | ------------------------------------- | ---------------------------------------------------- 
-| Bảng chưa tồn tại                       | Bảng sẽ được khởi tạo với schema define               |
+| Bảng chưa tồn tại                       | Bảng sẽ được khởi tạo với schema được định nghĩa      |
 | Bảng đã tồn tại | Không có hành động xảy ra                               |
 | Schema định nghĩa mà database không hỗ trợ | Bắt được message của hệ thống và trả về                             |
 

@@ -20,7 +20,7 @@ columns:
   - name: process_date
     type: timestamp
     db_type: TIMESTAMP
-    not_null: not_null
+    not_null: true
 
   - name: source_file
     type: string
@@ -29,5 +29,5 @@ columns:
     not_null: true
 
 load_database:
-  load_strategy: upsert
+  load_strategy: truncate_and_insert
   primary_key: province_id

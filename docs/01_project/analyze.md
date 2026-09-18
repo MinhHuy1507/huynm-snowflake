@@ -9,7 +9,7 @@
 - products: products' information.
 - orders: transactions/orders' information.
 
-# Layer:
+# Layers
 ```
 rcv/{schema_name}/{table_name}/yyyy/mm/dd/{table_name}.csv
 l0/{schema_name}/{table_name}/yyyy/mm/dd/{table_name}.csv
@@ -68,7 +68,7 @@ audit/{schema_name}/{table_name}/yyyy/mm/dd/{table_name}.parquet
         - Ensure data is loaded into PostgreSQL according to the business requirements and target table characteristics.
 
 
-## Tables và Schemas
+## Tables and Schemas
 - Cấu trúc lưu trữ
 ```
 rcv
@@ -186,19 +186,19 @@ orders_id, customer_id, product_id, quantity, unit_price, total_amount, order_da
 ```
 
 ### Quarantine
-- After file-level validation fails (rcv to l0), file is coppied from rcv to l0.  
+- After file-level validation fails (RCV to L0), the file is copied from RCV to Quarantine.
 
 
 ### Audit
 - From L0 to L1, records which fail business validation (not null, duplicate, datatype, ...) are written to audit.
-- Each table gonna have _source_index, error_type, error_rule, error_column, error_message for data tracking
+- Each table will have `_source_index`, `error_type`, `error_rule`, `error_column`, and `error_message` for data tracking.
 - customers
 ```
 _source_index,id,name,birthday,address,kpi,process_date,source_file,error_type,error_rule,error_column,error_message
 ```
 - products, orders, province: same.
 
-## Tech Stack & Deployment Environment==
+## Tech Stack & Deployment Environment
 - Python: Core language for data processing and pipeline development.
 - YAML: Configuration-driven validation, transformation, and metadata management.
 - AWS Services
