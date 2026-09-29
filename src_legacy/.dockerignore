@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# Python Code/Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configuration
+.env
+.env.example
+venv/
+env/
+docker-compose*.yml
+
+# Project specific (Ignored because they are mounted as Volumes)
+logs/
+temp/
+data/
+docs/
+note/
+
+
+# IDE
+.vscode/
+.idea/
+
+# more
+temp/
+studies/
+notebooks/
+models/
+
+.dockerignore
+README.md

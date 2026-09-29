@@ -3,7 +3,6 @@ import re
 from datetime import datetime
 from utils.logger import get_logger
 import json
-from scripts.utils.constants import TrackJob
 
 logging = get_logger(__name__)
 
@@ -37,8 +36,8 @@ def init_tracking_record(**kwargs):
             "table_name": table_name,
             "process_date": process_date,
             "source_file": source_file,
-            "status": TrackJob.STATUS_RUNNING,
-            "stage_name": TrackJob.INIT_STAGE,
+            "status": "RUNNING",
+            "stage_name": "INIT",
             "start_time": start_time,
             "end_time": None,
             "error_message": None,
@@ -73,7 +72,7 @@ def sns_publish(
             "table_name": table_name,
             "process_date": process_date,
             "source_file": source_file,
-            "status": TrackJob.STATUS_FAILED,
+            "status": "FAILED",
             "stage_name": stage_name,
             "error_message": error_message,
             "end_time": end_time,
@@ -117,7 +116,7 @@ def glue_job_failure_callback(context):
     final_error_message = airflow_error_str
 
     # Get Glue RunId from Airflow error message using regex
-    run_id_match = re.search(TrackJob.GLUE_ID_REGEX_PATERN, airflow_error_str)
+    run_id_match = re.search(r"Job (jr_[a-zA-Z0-9]+)", airflow_error_str)
 
     if run_id_match:
         glue_run_id = run_id_match.group(1)
@@ -131,7 +130,7 @@ def glue_job_failure_callback(context):
             if glue_internal_error:
                 final_error_message = glue_internal_error
 
-                stage_match = re.search(TrackJob.REGEX_PATTERN, glue_internal_error)
+                stage_match = re.search(r"FAILED_AT_\[(.*?)\]", glue_internal_error)
                 if stage_match:
                     stage_name = stage_match.group(1)
 
@@ -147,7 +146,7 @@ def glue_job_failure_callback(context):
             UpdateExpression="SET #st = :status, task_id = :task, stage_name = :stage, error_message = :err, end_time = :end",
             ExpressionAttributeNames={"#st": "status"},
             ExpressionAttributeValues={
-                ":status": TrackJob.STATUS_FAILED,
+                ":status": "FAILED",
                 ":task": task_id,
                 ":stage": stage_name,
                 ":err": final_error_message,
@@ -197,15 +196,13 @@ def glue_job_success_callback(context):
             UpdateExpression="SET #st = :status, task_id = :task, stage_name = :stage, end_time = :end",
             ExpressionAttributeNames={"#st": "status"},
             ExpressionAttributeValues={
-                ":status": TrackJob.STATUS_SUCCESS,
+                ":status": "SUCCESS",
                 ":task": task_id,
                 ":stage": f"{task_id}_completed",
                 ":end": end_time,
             },
         )
-        logging.info(
-            f"Successfully tracked {TrackJob.STATUS_SUCCESS} for {table_name}, task {task_id}"
-        )
+        logging.info(f"Successfully tracked SUCCESS for {table_name}, task {task_id}")
     except Exception as e:
         logging.error(f"Failed to update DynamoDB on success: {e}")
 
@@ -242,7 +239,7 @@ def python_job_failure_callback(context):
             UpdateExpression="SET #st = :status, task_id = :task, stage_name = :stage, error_message = :err, end_time = :end",
             ExpressionAttributeNames={"#st": "status"},
             ExpressionAttributeValues={
-                ":status": TrackJob.STATUS_FAILED,
+                ":status": "FAILED",
                 ":task": task_id,
                 ":stage": stage_name,
                 ":err": final_error_message,
@@ -290,7 +287,7 @@ def python_job_success_callback(context):
             UpdateExpression="SET #st = :status, task_id = :task, stage_name = :stage, end_time = :end",
             ExpressionAttributeNames={"#st": "status"},
             ExpressionAttributeValues={
-                ":status": TrackJob.STATUS_SUCCESS,
+                ":status": "SUCCESS",
                 ":task": task_id,
                 ":stage": f"{task_id}_completed",
                 ":end": end_time,

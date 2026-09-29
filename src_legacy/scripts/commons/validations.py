@@ -1,6 +1,5 @@
 from scripts.utils import logger, s3_helper
 from itertools import islice
-from scripts.utils.constants import ErrorMessages
 
 logging = logger.get_logger(__name__)
 
@@ -20,7 +19,7 @@ def validate_file(context):
 
     # File exists
     if not s3_helper.check_file_exists(bucket, key_source):
-        msg = f"{ErrorMessages.FILE_NOT_FOUND} - {file_path}"
+        msg = f"File not found - {file_path}"
         logging.error(msg)
         raise ValidationError(msg)
 
@@ -31,18 +30,18 @@ def validate_file(context):
 
         first_line = next(iterator, None)
         if not first_line:
-            raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
+            raise ValidationError(f"File empty - {file_path}")
 
         header_line = first_line.decode("utf-8").strip()
         if not header_line:
-            raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
+            raise ValidationError(f"File empty - {file_path}")
 
         first_data_line = next(
             (l.decode("utf-8").strip() for l in islice(iterator, 10) if l.strip()), None
         )
         if not first_data_line:
             raise ValidationError(
-                f"{ErrorMessages.FILE_CONTAINS_ONLY_HEADER} - {file_path}"
+                f"File contains only header without data - {file_path}"
             )
         context["header_line"] = header_line
 
@@ -53,13 +52,12 @@ def validate_file(context):
 
     except Exception as e:
         s3_helper.copy_file(bucket, key_source, bucket, key_quarantine)
-        error_msg = f"{ErrorMessages.FILE_NOT_READABLE} - {file_path}"
+        error_msg = f"File is not readable - {file_path}"
         logging.error(f"{error_msg} | Internal Error: {str(e)}")
         raise ValidationError(error_msg)
 
 
 def validate_schema(context):
-    logging.info("Validaing schema")
     config = context["config"]
     actual = context["header_line"].split(",")
     expected = [column["name"] for column in config["columns"]]
@@ -71,9 +69,7 @@ def validate_schema(context):
             context["bucket"],
             context["key_quarantine"],
         )
-        raise ValidationError(
-            f"{ErrorMessages.SCHEMA_MISMATCH}. Expected {expected}, got {actual}"
-        )
+        raise ValidationError(f"Schema mismatch. Expected {expected}, got {actual}")
 
 
 def validate_rcv_to_l0(context):
@@ -149,12 +145,11 @@ def validate_duplicate(column=None, primary_key=None, all_columns=None):
 def validate_datatype(config):
     expr = []
     TYPE_MAPPING = {
-        "VARCHAR": "{column}",
-        "INTEGER": "TRY_TO_NUMBER({column})",
-        "NUMERIC": "TRY_TO_DECIMAL({column})",
-        "DATE": "TRY_TO_DATE({column}{format})",
-        "TIMESTAMP": "TRY_TO_TIMESTAMP({column})",
-        "BOOLEAN": "TRY_TO_BOOLEAN({column})",
+        "integer": "TRY_TO_NUMBER({column})",
+        "decimal": "TRY_TO_DECIMAL({column})",
+        "date": "TRY_TO_DATE({column}{format})",
+        "timestamp": "TRY_TO_TIMESTAMP({column})",
+        "boolean": "TRY_TO_BOOLEAN({column})",
     }
     for column in config["columns"]:
         col_name = column["name"]

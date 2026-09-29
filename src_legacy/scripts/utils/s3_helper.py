@@ -1,7 +1,7 @@
 import boto3
 import yaml
 from botocore.exceptions import ClientError
-from scripts.utils import logger, constants
+from scripts.utils import logger
 
 logging = logger.get_logger(__name__)
 s3 = boto3.client("s3")
@@ -14,7 +14,7 @@ def check_file_exists(bucket, key):
         return True
     except ClientError as e:
         error_code = e.response.get("Error", {}).get("Code")
-        if error_code in constants.DataPipeline.ERROR_CODE:
+        if error_code in ["404", "403"]:
             return False
         raise e
 

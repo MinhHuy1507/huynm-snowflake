@@ -1,8 +1,6 @@
 from datetime import datetime
-
 import snowflake.connector
 from scripts.utils import logger
-from scripts.utils.constants import DataPipeline, AWSConfigs, SnowflakeConfig
 
 logging = logger.get_logger(__name__)
 
@@ -22,14 +20,9 @@ def create_process_scope(
     is_temporary: bool = False,
 ):
     try:
-        partition_date = datetime.strptime(
-            AWSConfigs.DEFAULT_PROCESS_DATE if process_date is None else process_date,
-            DataPipeline.DATE_FORMAT,
-        )
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            f"process_date must use {DataPipeline.DATE_FORMAT} format"
-        ) from exc
+        partition_date = datetime.strptime(process_date, "%Y/%m/%d")
+    except ValueError as exc:
+        raise ValueError("process_date must use YYYY/MM/DD format") from exc
 
     table_type = "TEMP TABLE" if is_temporary else "TABLE"
 
@@ -54,8 +47,8 @@ def write_file(
     is_valid: bool = True,
 ):
     format_map = {
-        "csv": SnowflakeConfig.DEFINED_CSV_FORMAT,
-        "parquet": SnowflakeConfig.DEFINED_PARQUET_FORMAT,
+        "csv": "csv_ff",
+        "parquet": "parquet_ff",
     }
     file_name = f"{table_name}.{format}"
     condition = f"WHERE ARRAY_SIZE(validation_errors) > 0" if not is_valid else ""

@@ -40,3 +40,6 @@ glue_libs/
 *.whl
 
 !src/glue/deploy.bat
+
+*.xlsx
+excel/

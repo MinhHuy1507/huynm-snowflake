@@ -3,7 +3,6 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
 from airflow.models.param import Param
-from scripts.utils.constants import AWSConfigs
 from scripts.utils.configs import (
     upload_secret_to_s3,
     delete_secret_from_s3,
@@ -36,38 +35,38 @@ with DAG(
     schedule=None,
     params={
         "bucket_name": Param(
-            default=AWSConfigs.DEFAULT_BUCKET,
+            default="huynm43-mock-project-s3-414061810527-us-east-1-an",
             type="string",
             description="S3 bucket name containing the data.",
         ),
         "schema_name": Param(
-            default=AWSConfigs.DEFAULT_SCHEMA,
+            default="retail",
             type="string",
             description="Schema name for the tables. Default is 'retail'.",
         ),
         "table_name": Param(
-            default=AWSConfigs.DEFAULT_TABLE,
+            default="customers",
             type="string",
-            enum=AWSConfigs.SUPPORTED_TABLES,
+            enum=["customers", "products", "orders", "province"],
             description="Table name to process. Options: customers, products, orders, province. Default is customers.",
         ),
         "process_date": Param(
-            default=AWSConfigs.DEFAULT_PROCESS_DATE,
+            default=datetime.now().strftime("%Y/%m/%d"),
             type="string",
             description="Custom date for processing in format YYYY/MM/DD. Default is today's date.",
         ),
         "region_name": Param(
-            default=AWSConfigs.DEFAULT_REGION,
+            default="us-east-1",
             type="string",
             description="AWS region name. Default is us-east-1.",
         ),
         "dynamo_table_name": Param(
-            default=AWSConfigs.DYNAMO_TABLE_TRACKING,
+            default="huynm43-mp-dynamo",
             type="string",
             description="DynamoDB table name for tracking job status.",
         ),
         "sns_topic_arn": Param(
-            default=AWSConfigs.SNS_TOPIC_ARN,
+            default="arn:aws:sns:us-east-1:414061810527:huynm43-mp-sns",
             type="string",
             description="SNS topic ARN for publishing job failure notifications.",
         ),
@@ -114,7 +113,7 @@ with DAG(
 
     load_database = GlueJobOperator(
         task_id="load_database",
-        job_name=AWSConfigs.GLUE_LOAD_DB_JOB,
+        job_name="huynm43-mp-glue-load-db",
         script_args={
             "--bucket": bucket_name,
             "--schema": schema_name,

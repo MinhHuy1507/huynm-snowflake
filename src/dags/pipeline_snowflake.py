@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.models.param import Param
+from scripts.utils.constants import AWSConfigs
 
 from scripts.utils.track_job import (
     init_tracking_record,
@@ -10,7 +11,7 @@ from scripts.utils.track_job import (
 )
 
 from scripts.process_rcv_to_l0 import process_rcv_to_l0
-from scripts.snowflake_process import process_l0_to_l1
+from scripts.snowflake_process_legacy import process_l0_to_l1
 
 default_args = {
     "owner": "airflow",
@@ -28,38 +29,38 @@ with DAG(
     schedule=None,
     params={
         "bucket_name": Param(
-            default="huynm43-mock-project-s3-414061810527-us-east-1-an",
+            default=AWSConfigs.DEFAULT_BUCKET,
             type="string",
             description="S3 bucket name containing the data.",
         ),
         "schema_name": Param(
-            default="retail",
+            default=AWSConfigs.DEFAULT_SCHEMA,
             type="string",
             description="Schema name for the tables. Default is 'retail'.",
         ),
         "table_name": Param(
-            default="customers",
+            default=AWSConfigs.DEFAULT_TABLE,
             type="string",
-            enum=["customers", "products", "orders", "province"],
+            enum=AWSConfigs.SUPPORTED_TABLES,
             description="Table name to process. Options: customers, products, orders, province. Default is customers.",
         ),
         "process_date": Param(
-            default=datetime.now().strftime("%Y/%m/%d"),
+            default=AWSConfigs.DEFAULT_PROCESS_DATE,
             type="string",
             description="Custom date for processing in format YYYY/MM/DD. Default is today's date.",
         ),
         "region_name": Param(
-            default="us-east-1",
+            default=AWSConfigs.DEFAULT_REGION,
             type="string",
             description="AWS region name. Default is us-east-1.",
         ),
         "dynamo_table_name": Param(
-            default="huynm43-mp-dynamo",
+            default=AWSConfigs.DYNAMO_TABLE_TRACKING,
             type="string",
             description="DynamoDB table name for tracking job status.",
         ),
         "sns_topic_arn": Param(
-            default="arn:aws:sns:us-east-1:414061810527:huynm43-mp-sns",
+            default=AWSConfigs.SNS_TOPIC_ARN,
             type="string",
             description="SNS topic ARN for publishing job failure notifications.",
         ),
