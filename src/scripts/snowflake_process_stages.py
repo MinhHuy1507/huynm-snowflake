@@ -12,7 +12,7 @@ from scripts.utils.configs import (
 )
 from scripts.commons import sf_helper
 from scripts.utils.table_config_generator import get_table_config_from_dynamo
-from scripts.utils.constants import AWSConfigs, DataPipeline
+from scripts.utils.constants import AWSConfigs, DataPipeline, ErrorMessages
 
 logging = logger.get_logger(__name__)
 
@@ -44,8 +44,9 @@ def load_snowflake(schema, table, process_date, run_id):
         logging.info(process_tmp_table_sql)
         sf_conn.cursor().execute(process_tmp_table_sql)
     except Exception as e:
-        logging.error(str(e))
-        raise e
+        error_message = f"{ErrorMessages.EXCEPTION_MESSAGE_FOR_REGEX}_[{DataPipeline.PROCESS_L0_TO_L1}]: {str(e)}"
+        logging.error(error_message)
+        raise Exception(error_message)
     finally:
         if sf_conn:
             sf_conn.close()
@@ -130,8 +131,9 @@ def process_l0_to_l1(schema, table, process_date, run_id, dynamo_table_config):
         logging.info(f"\nCompleted process from l0 to l1, table {table}")
 
     except Exception as e:
-        logging.error(str(e))
-        raise e
+        error_message = f"{ErrorMessages.EXCEPTION_MESSAGE_FOR_REGEX}_[{DataPipeline.PROCESS_L0_TO_L1}]: {str(e)}"
+        logging.error(error_message)
+        raise Exception(error_message)
     finally:
         if sf_conn:
             sf_conn.close()

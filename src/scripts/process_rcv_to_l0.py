@@ -2,7 +2,7 @@ import argparse
 from scripts.commons import validations
 from scripts.utils import logger, s3_helper
 from scripts.utils.table_config_generator import get_table_config_from_dynamo
-from scripts.utils.constants import AWSConfigs, DataPipeline
+from scripts.utils.constants import AWSConfigs, DataPipeline, ErrorMessages
 
 logging = logger.get_logger(__name__)
 
@@ -40,7 +40,7 @@ def process_rcv_to_l0(schema, table, bucket, process_date, dynamo_table_config):
         )
         logging.info(f"\nCompleted process from rcv to l0, table {table}")
     except Exception as e:
-        error_message = f"FAILED_AT_[{DataPipeline.PROCESS_RCV_TO_L0}]: {str(e)}"
+        error_message = f"{ErrorMessages.EXCEPTION_MESSAGE_FOR_REGEX}_[{DataPipeline.PROCESS_RCV_TO_L0}]: {str(e)}"
         logging.error(error_message)
         raise Exception(error_message)
 

@@ -76,3 +76,4 @@ class ErrorMessages:
     FILE_CONTAINS_ONLY_HEADER = "File contains only header without data"
     FILE_NOT_READABLE = "File is not readable"
     SCHEMA_MISMATCH = "Schema mismatch"
+    EXCEPTION_MESSAGE_FOR_REGEX = "FAILED_AT"
