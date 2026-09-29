@@ -1,0 +1,35 @@
+table_name: province
+schema_name: retail
+
+l0_layer: l0
+l1_layer: l1
+audit_layer: audit
+
+l0_format: csv
+l1_format: parquet
+audit_format: parquet
+
+l0_stage: stage_l0
+l1_stage: stage_l1
+audit_stage: stage_audit
+
+columns:
+  - name: id
+    type: string
+  - name: name
+    type: string
+
+validation:
+  - rule: not_null
+    column: [id, name, source_file, process_date]
+  - rule: duplicate
+    primary_key: id
+
+transformation:
+  rename:
+    - from: id
+      to: province_id
+    - from: name
+      to: province_name
+  filter_columns:
+    - output: [province_id, province_name, process_date, source_file]
