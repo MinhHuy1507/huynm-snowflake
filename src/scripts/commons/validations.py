@@ -1,4 +1,6 @@
 import smart_open
+import json
+import ijson
 import boto3
 from scripts.utils import logger, s3_helper
 from itertools import islice
@@ -17,45 +19,68 @@ def validate_file(context):
     bucket = context["bucket"]
     key_source = context["key_source"]
     key_quarantine = context["key_quarantine"]
-    file_format = context.get("file_format")
+    file_format = context.get("file_format", "csv").lower()
     file_path = f"s3://{bucket}/{key_source}"
-    logging.info(f"Validating file: {file_path}")
+
+    logging.info(f"Validating file: {file_path} (Format: {file_format})")
 
     if not s3_helper.check_file_exists(bucket, key_source):
         msg = f"{ErrorMessages.FILE_NOT_FOUND} - {file_path}"
         logging.error(msg)
         raise ValidationError(msg)
 
-    if file_format in ["json", "jsonl"]:
-        logging.info(f"Skipping file validation for JSON/JSONL")
-        return
-
     try:
-        transport_params = {"client": boto3.client("s3")}
-        with smart_open.open(
-            file_path,
-            "r",
-            encoding=DataPipeline.ENCODING,
-            transport_params=transport_params,
-        ) as fin:
-            header_line = (next(fin, "") or "").strip()
-            if not header_line:
-                raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
+        open_kwargs = {
+            "uri": file_path,
+            "transport_params": {"client": boto3.client("s3")},
+            "mode": "r" if file_format != "json" else "rb",
+            "encoding": DataPipeline.ENCODING if file_format != "json" else None,
+        }
 
-            first_data_line = next(
-                (l.strip() for l in islice(fin, 10) if l.strip()), None
-            )
-            if not first_data_line:
-                raise ValidationError(
-                    f"{ErrorMessages.FILE_CONTAINS_ONLY_HEADER} - {file_path}"
+        with smart_open.open(**open_kwargs) as fin:
+            if file_format == "json":
+                try:
+                    first_record = next(ijson.items(fin, "item"))
+                    if not isinstance(first_record, dict):
+                        raise ValidationError(
+                            "Json format error: The first item is not a JSON object."
+                        )
+                    context["actual_keys"] = list(first_record.keys())
+                except StopIteration:
+                    raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
+
+            elif file_format == "jsonl":
+                first_line = next((l.strip() for l in fin if l.strip()), None)
+                if not first_line:
+                    raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
+
+                first_record = json.loads(first_line)
+                if not isinstance(first_record, dict):
+                    raise ValidationError(
+                        "Jsonl format error: The first line is not a JSON object."
+                    )
+                context["actual_keys"] = list(first_record.keys())
+
+            else:
+                header_line = (next(fin, "") or "").strip()
+                if not header_line:
+                    raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
+
+                first_data_line = next(
+                    (l.strip() for l in islice(fin, 10) if l.strip()), None
                 )
-            context["header_line"] = header_line
+                if not first_data_line:
+                    raise ValidationError(
+                        f"{ErrorMessages.FILE_CONTAINS_ONLY_HEADER} - {file_path}"
+                    )
+
+                delimiter = context.get("config", {}).get("delimeter", ",")
+                context["actual_keys"] = header_line.split(delimiter)
 
     except ValidationError as ve:
         s3_helper.copy_file(bucket, key_source, bucket, key_quarantine)
         logging.error(str(ve))
         raise ve
-
     except Exception as e:
         s3_helper.copy_file(bucket, key_source, bucket, key_quarantine)
         error_msg = f"{ErrorMessages.FILE_NOT_READABLE} - {file_path}"
@@ -65,17 +90,20 @@ def validate_file(context):
 
 def validate_schema(context):
     logging.info("Validating schema")
-    file_format = context.get("file_format")
-    if file_format in ["json", "jsonl"]:
-        logging.info(f"Skipping file validation for JSON/JSONL")
-        return
 
-    config = context["config"]
-    delimiter = config.get("delimeter", ",")
-    actual = context["header_line"].split(delimiter)
-    expected = [column["name"] for column in config["columns"]]
+    file_format = context.get("file_format", "csv").lower()
+    actual_keys = context.get("actual_keys", [])
+    expected_keys = [
+        col["name"] for col in context.get("config", {}).get("columns", [])
+    ]
 
-    if actual != expected:
+    is_valid = (
+        set(actual_keys) == set(expected_keys)
+        if file_format in ["json", "jsonl"]
+        else actual_keys == expected_keys
+    )
+
+    if not is_valid:
         s3_helper.copy_file(
             context["bucket"],
             context["key_source"],
@@ -83,7 +111,7 @@ def validate_schema(context):
             context["key_quarantine"],
         )
         raise ValidationError(
-            f"{ErrorMessages.SCHEMA_MISMATCH}. Expected {expected}, got {actual}"
+            f"{ErrorMessages.SCHEMA_MISMATCH}. Expected {expected_keys}, got {actual_keys}"
         )
 
 

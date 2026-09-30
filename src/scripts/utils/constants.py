@@ -67,6 +67,7 @@ class SnowflakeConfig:
     DEFINED_SCSV_FORMAT = "scsv_ff"
     DEFINED_PARQUET_FORMAT = "parquet_ff"
     DEFINED_JSON_FORMAT = "json_ff"
+    DEFINED_JSONL_FORMAT = "jsonl_ff"
 
     PATTERN_FILE = None
     EXTERNAL_TABLE_AUTO_REFRESH = False

@@ -33,7 +33,7 @@ def create_external_table_sql(
         "psv": SnowflakeConfig.DEFINED_PSV_FORMAT,
         "scsv": SnowflakeConfig.DEFINED_SCSV_FORMAT,
         "json": SnowflakeConfig.DEFINED_JSON_FORMAT,
-        "jsonl": SnowflakeConfig.DEFINED_JSON_FORMAT,
+        "jsonl": SnowflakeConfig.DEFINED_JSONL_FORMAT,
         "parquet": SnowflakeConfig.DEFINED_PARQUET_FORMAT,
     }
 
