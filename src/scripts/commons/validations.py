@@ -1,6 +1,8 @@
+import smart_open
+import boto3
 from scripts.utils import logger, s3_helper
 from itertools import islice
-from scripts.utils.constants import ErrorMessages
+from scripts.utils.constants import ErrorMessages, DataPipeline
 
 logging = logger.get_logger(__name__)
 
@@ -15,36 +17,39 @@ def validate_file(context):
     bucket = context["bucket"]
     key_source = context["key_source"]
     key_quarantine = context["key_quarantine"]
+    file_format = context.get("file_format")
     file_path = f"s3://{bucket}/{key_source}"
     logging.info(f"Validating file: {file_path}")
 
-    # File exists
     if not s3_helper.check_file_exists(bucket, key_source):
         msg = f"{ErrorMessages.FILE_NOT_FOUND} - {file_path}"
         logging.error(msg)
         raise ValidationError(msg)
 
-    # File readable, file not empty
+    if file_format in ["json", "jsonl"]:
+        logging.info(f"Skipping file validation for JSON/JSONL")
+        return
+
     try:
-        response = s3_helper.get_object(bucket, key_source)
-        iterator = response["Body"].iter_lines()
+        transport_params = {"client": boto3.client("s3")}
+        with smart_open.open(
+            file_path,
+            "r",
+            encoding=DataPipeline.ENCODING,
+            transport_params=transport_params,
+        ) as fin:
+            header_line = (next(fin, "") or "").strip()
+            if not header_line:
+                raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
 
-        first_line = next(iterator, None)
-        if not first_line:
-            raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
-
-        header_line = first_line.decode("utf-8").strip()
-        if not header_line:
-            raise ValidationError(f"{ErrorMessages.FILE_EMPTY} - {file_path}")
-
-        first_data_line = next(
-            (l.decode("utf-8").strip() for l in islice(iterator, 10) if l.strip()), None
-        )
-        if not first_data_line:
-            raise ValidationError(
-                f"{ErrorMessages.FILE_CONTAINS_ONLY_HEADER} - {file_path}"
+            first_data_line = next(
+                (l.strip() for l in islice(fin, 10) if l.strip()), None
             )
-        context["header_line"] = header_line
+            if not first_data_line:
+                raise ValidationError(
+                    f"{ErrorMessages.FILE_CONTAINS_ONLY_HEADER} - {file_path}"
+                )
+            context["header_line"] = header_line
 
     except ValidationError as ve:
         s3_helper.copy_file(bucket, key_source, bucket, key_quarantine)
@@ -59,9 +64,15 @@ def validate_file(context):
 
 
 def validate_schema(context):
-    logging.info("Validaing schema")
+    logging.info("Validating schema")
+    file_format = context.get("file_format")
+    if file_format in ["json", "jsonl"]:
+        logging.info(f"Skipping file validation for JSON/JSONL")
+        return
+
     config = context["config"]
-    actual = context["header_line"].split(",")
+    delimiter = config.get("delimeter", ",")
+    actual = context["header_line"].split(delimiter)
     expected = [column["name"] for column in config["columns"]]
 
     if actual != expected:
@@ -74,14 +85,6 @@ def validate_schema(context):
         raise ValidationError(
             f"{ErrorMessages.SCHEMA_MISMATCH}. Expected {expected}, got {actual}"
         )
-
-
-def validate_rcv_to_l0(context):
-    config = context["config"]
-    for function, required in config["validation"].items():
-        if required:
-            function_map = VALIDATE_FUNCTIONS[function]
-            function_map(context)
 
 
 # L0 to L1

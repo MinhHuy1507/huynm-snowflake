@@ -48,6 +48,8 @@ class DataPipeline:
     TEMP_EXCEL_PATH = "../excel/RCV_L0_Tables_Definitions.xlsx"
     ERROR_CODE = ["404", "403"]
 
+    ENCODING = "utf-8"
+
 
 class TrackJob:
     STATUS_SUCCESS = "SUCCESS"
@@ -60,8 +62,13 @@ class TrackJob:
 
 class SnowflakeConfig:
     DEFINED_CSV_FORMAT = "csv_ff"
+    DEFINED_TSV_FORMAT = "tsv_ff"
+    DEFINED_PSV_FORMAT = "psv_ff"
+    DEFINED_SCSV_FORMAT = "scsv_ff"
     DEFINED_PARQUET_FORMAT = "parquet_ff"
-    PATTERN_FILE_CSV = r".*/[^._][^/]*\\.csv$"
+    DEFINED_JSON_FORMAT = "json_ff"
+
+    PATTERN_FILE = None
     EXTERNAL_TABLE_AUTO_REFRESH = False
 
 
@@ -77,3 +84,11 @@ class ErrorMessages:
     FILE_NOT_READABLE = "File is not readable"
     SCHEMA_MISMATCH = "Schema mismatch"
     EXCEPTION_MESSAGE_FOR_REGEX = "FAILED_AT"
+
+
+COMPRESSION_EXTENSIONS = {
+    "gzip": "gz",
+    "bzip2": "bz2",
+    "xz": "xz",
+    "lzma": "lzma",
+}

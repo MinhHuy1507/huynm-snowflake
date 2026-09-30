@@ -1,7 +1,12 @@
 import argparse
 from scripts.commons import sf_helper
 from scripts.utils import logger
-from scripts.utils.constants import AWSConfigs, DataPipeline, SnowflakeConfig
+from scripts.utils.constants import (
+    AWSConfigs,
+    DataPipeline,
+    SnowflakeConfig,
+    COMPRESSION_EXTENSIONS,
+)
 from scripts.utils.configs import (
     sf_user,
     sf_password,
@@ -18,13 +23,21 @@ from scripts.utils.table_config_generator import (
 logging = logger.get_logger(__name__)
 
 
-def create_external_table_sql(config: dict, pattern: str, auto_refresh: bool) -> str:
+# Generate regex pattern dynamically inside the DDL builder based on config
+def create_external_table_sql(
+    config: dict, auto_refresh: bool, pattern: str = None
+) -> str:
     format_mapping = {
         "csv": SnowflakeConfig.DEFINED_CSV_FORMAT,
+        "tsv": SnowflakeConfig.DEFINED_TSV_FORMAT,
+        "psv": SnowflakeConfig.DEFINED_PSV_FORMAT,
+        "scsv": SnowflakeConfig.DEFINED_SCSV_FORMAT,
+        "json": SnowflakeConfig.DEFINED_JSON_FORMAT,
+        "jsonl": SnowflakeConfig.DEFINED_JSON_FORMAT,
         "parquet": SnowflakeConfig.DEFINED_PARQUET_FORMAT,
     }
 
-    fmt = config.get(f"format", "").lower()
+    fmt = config.get("format", "").lower()
     if fmt not in format_mapping:
         raise ValueError(
             f"Unsupported Format '{fmt}'. Only: {list(format_mapping.keys())}"
@@ -32,6 +45,14 @@ def create_external_table_sql(config: dict, pattern: str, auto_refresh: bool) ->
 
     file_format = format_mapping[fmt]
     table_name = config.get("table_name")
+
+    if not pattern:
+        compression = config.get("compression")
+        if compression:
+            pattern = rf".*/{table_name}\.{fmt}\.{COMPRESSION_EXTENSIONS[compression]}$"
+        else:
+            pattern = rf".*/{table_name}\.{fmt}(\.[a-zA-Z0-9]+)?$"
+
     schema_name = config.get("schema_name")
     config_layer = config.get("config_layer")
     stage_name = f"stage_{config_layer}"
@@ -41,7 +62,7 @@ def create_external_table_sql(config: dict, pattern: str, auto_refresh: bool) ->
     c_index = 1
     for col in columns:
         col_name = col.get("name")
-        if fmt == "csv":
+        if fmt in ["csv", "tsv", "psv", "scsv"]:
             col_definitions.append(
                 f"    {col_name} STRING AS (VALUE:c{c_index}::STRING)"
             )
@@ -80,7 +101,7 @@ def _execute_external_table(
 ):
     logging.info(f"Creating external table for {table_name}")
     ddl = create_external_table_sql(
-        config=config, pattern=pattern, auto_refresh=auto_refresh
+        config=config, auto_refresh=auto_refresh, pattern=pattern
     )
     logging.info(ddl)
     sf_conn.cursor().execute(ddl)
@@ -100,7 +121,7 @@ def _get_sf_connection():
 def create_external_table(
     table_name: str,
     dynamo_table_config: str = AWSConfigs.DYNAMO_TABLE_CONFIG,
-    pattern: str = SnowflakeConfig.PATTERN_FILE_CSV,
+    pattern: str = SnowflakeConfig.PATTERN_FILE,
     auto_refresh: bool = SnowflakeConfig.EXTERNAL_TABLE_AUTO_REFRESH,
 ):
     sf_conn = None
@@ -130,7 +151,7 @@ def create_external_table(
 def create_all_external_table(
     excel_path: str = DataPipeline.TEMP_EXCEL_PATH,
     dynamo_table_config: str = AWSConfigs.DYNAMO_TABLE_CONFIG,
-    pattern: str = SnowflakeConfig.PATTERN_FILE_CSV,
+    pattern: str = SnowflakeConfig.PATTERN_FILE,
     auto_refresh: bool = SnowflakeConfig.EXTERNAL_TABLE_AUTO_REFRESH,
 ):
     table_names = get_all_table_names(excel_path)
@@ -182,7 +203,7 @@ def parse_args():
     )
     parser.add_argument(
         "--pattern",
-        default=SnowflakeConfig.PATTERN_FILE_CSV,
+        default=SnowflakeConfig.PATTERN_FILE,
         help="Regex pattern for files loaded by the external tables",
     )
     parser.add_argument(

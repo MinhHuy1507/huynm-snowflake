@@ -30,7 +30,8 @@ def load_snowflake(schema, table, process_date, run_id):
             database=sf_database,
             schema=sf_schema,
         )
-        table_process_scope = f"{table}_{run_id}"
+        str_date = str(process_date).replace("/", "_")
+        table_process_scope = f"{table}__{str_date}__{run_id}"
 
         logging.info(f"Refreshing external table for {table}")
         refresh_ext_sql = sf_helper.refresh_external_table(schema, table, process_date)
@@ -83,7 +84,8 @@ def process_l0_to_l1(schema, table, process_date, run_id, dynamo_table_config):
         stage_l1 = f"stage_{config_target['l1_layer']}"
         stage_audit = f"stage_{config_target['audit_layer']}"
 
-        table_process_scope = f"{table}_{run_id}"
+        str_date = str(process_date).replace("/", "_")
+        table_process_scope = f"{table}__{str_date}__{run_id}"
         validation = f"validation_{table}"
         transformation = f"transformation_{table}"
 

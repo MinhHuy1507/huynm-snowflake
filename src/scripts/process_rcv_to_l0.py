@@ -2,7 +2,12 @@ import argparse
 from scripts.commons import validations
 from scripts.utils import logger, s3_helper
 from scripts.utils.table_config_generator import get_table_config_from_dynamo
-from scripts.utils.constants import AWSConfigs, DataPipeline, ErrorMessages
+from scripts.utils.constants import (
+    AWSConfigs,
+    DataPipeline,
+    ErrorMessages,
+    COMPRESSION_EXTENSIONS,
+)
 
 logging = logger.get_logger(__name__)
 
@@ -16,14 +21,29 @@ def process_rcv_to_l0(schema, table, bucket, process_date, dynamo_table_config):
             dynamo_table_name=dynamo_table_config,
         )
         logging.info(config)
-        key_rcv = f"{config.get('rcv_layer')}/{schema}/{table}/{process_date}/{table}.{config.get('format')}"
-        key_l0 = f"{config.get('l0_layer')}/{schema}/{table}/{process_date}/{table}.{config.get('format')}"
-        key_quarantine = f"{config.get('quarantine_layer')}/{schema}/{table}/{process_date}/{table}.{config.get('format')}"
+
+        file_format = config.get("format", "csv")
+        compression = config.get("compression")
+
+        if compression:
+            comp_lower = compression.lower()
+            comp_ext = COMPRESSION_EXTENSIONS.get(comp_lower, comp_lower)
+            file_name = f"{table}.{file_format}.{comp_ext}"
+        else:
+            file_name = f"{table}.{file_format}"
+
+        # Tạo keys
+        key_rcv = (
+            f"{config.get('rcv_layer')}/{schema}/{table}/{process_date}/{file_name}"
+        )
+        key_l0 = f"{config.get('l0_layer')}/{schema}/{table}/{process_date}/{file_name}"
+        key_quarantine = f"{config.get('quarantine_layer')}/{schema}/{table}/{process_date}/{file_name}"
 
         context = {
             "bucket": bucket,
             "key_source": key_rcv,
             "key_quarantine": key_quarantine,
+            "file_format": file_format,
             "config": config,
         }
 

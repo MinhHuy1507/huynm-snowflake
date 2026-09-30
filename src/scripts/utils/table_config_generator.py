@@ -55,6 +55,8 @@ def extract_table_metadata(
         if key == ExcelColumns.LAYER:
             continue
         if pd.notna(value):
+            if isinstance(value, str):
+                value = value.encode("utf-8").decode("unicode_escape")
             table_config[key.lower().replace(" ", "_")] = value
 
     layers = [
